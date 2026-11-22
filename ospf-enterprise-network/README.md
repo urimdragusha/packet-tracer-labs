@@ -16,7 +16,7 @@ flowchart TB
     R1 ---|10.12.12.0/30| R6["Router6"]
     R6 --- SRV["DHCP server<br/>192.168.8.2"]
     R6 ---|10.30.30.0/30| R8["Router8<br/>router-on-a-stick<br/>VLAN 10, VLAN 20"]
-    R8 ---|10.20.20.0/30| R9["Router9<br/>172.168.1.0/24, 172.168.2.0/24"]
+    R8 ---|10.20.20.0/30| R9["Router9<br/>172.16.1.0/24, 172.16.2.0/24"]
 ```
 
 ## Design
@@ -24,7 +24,7 @@ flowchart TB
 - **Core ring (Router0–Router3):** four 2911 routers connected in a square with `/30` point-to-point links. If any single core link fails, OSPF reconverges over the other side of the ring.
 - **Sites:** each core router connects to a site router. Each site router serves two user LANs (`/24`).
 - **Services:** Router6 hosts the server LAN `192.168.8.0/24`. The server `192.168.8.2` is the central DHCP server. Site routers forward DHCP requests to it with `ip helper-address 192.168.8.2`.
-- **VLAN site (Router8):** Gi0/1 is an 802.1Q trunk with sub-interfaces for VLAN 10 and VLAN 20 (router-on-a-stick).
+- **VLAN site (Router8):** Gi0/1 is an 802.1Q trunk with sub-interfaces for VLAN 10 and VLAN 20 (router-on-a-stick). Hosts in both VLANs get their addresses from the central DHCP server through the relay.
 
 ## Core & WAN links
 
@@ -53,10 +53,10 @@ flowchart TB
 | Router7 | Gi0/1 | 192.168.2.0/24 | 192.168.2.1 | ✔ |
 | Router7 | Gi0/2 | 192.168.1.0/24 | 192.168.1.1 | ✔ |
 | Router8 | Gi0/1 (native) | 192.168.9.0/24 | 192.168.9.1 | ✔ |
-| Router8 | Gi0/1.10 (VLAN 10) | 192.168.10.0/24 | 192.168.10.1 | n/a |
-| Router8 | Gi0/1.20 (VLAN 20) | 192.168.20.0/24 | 192.168.20.1 | n/a |
-| Router9 | Gi0/1 | 172.168.1.0/24 | 172.168.1.1 | ✔ |
-| Router9 | Gi0/2 | 172.168.2.0/24 | 172.168.2.1 | ✔ |
+| Router8 | Gi0/1.10 (VLAN 10) | 192.168.10.0/24 | 192.168.10.1 | ✔ |
+| Router8 | Gi0/1.20 (VLAN 20) | 192.168.20.0/24 | 192.168.20.1 | ✔ |
+| Router9 | Gi0/1 | 172.16.1.0/24 | 172.16.1.1 | ✔ |
+| Router9 | Gi0/2 | 172.16.2.0/24 | 172.16.2.1 | ✔ |
 
 ## Key configuration examples
 
@@ -83,9 +83,11 @@ interface GigabitEthernet0/1
 interface GigabitEthernet0/1.10
  encapsulation dot1Q 10
  ip address 192.168.10.1 255.255.255.0
+ ip helper-address 192.168.8.2
 interface GigabitEthernet0/1.20
  encapsulation dot1Q 20
  ip address 192.168.20.1 255.255.255.0
+ ip helper-address 192.168.8.2
 ```
 
 All router configs are in [`configs/`](./configs).
